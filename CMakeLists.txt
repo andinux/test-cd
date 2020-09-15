@@ -57,9 +57,14 @@ else()
     TARGET install_libs POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory ${LibreSSL_INSTALL}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${LibreSSL_INCLUDE}/openssl
-    COMMAND ${CMAKE_COMMAND} -E copy ${libressl_BINARY_DIR}/ssl/libssl.a ${libressl_BINARY_DIR}/crypto/libcrypto.a ${LibreSSL_INSTALL}
-    COMMAND ${CMAKE_COMMAND} -E copy ${libressl_SOURCE_DIR}/include/*.h ${LibreSSL_INCLUDE}
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${libressl_SOURCE_DIR}/include/openssl ${LibreSSL_INCLUDE}/openssl
+    
+    if (WIN32)
+      COMMAND ${CMAKE_COMMAND} -E copy ${libressl_BINARY_DIR}/ssl/${CMAKE_BUILD_TYPE}/* ${libressl_BINARY_DIR}/crypto/${CMAKE_BUILD_TYPE}/* ${LibreSSL_INSTALL}
+    else()
+      COMMAND ${CMAKE_COMMAND} -E copy ${libressl_BINARY_DIR}/ssl/libssl.a ${libressl_BINARY_DIR}/crypto/libcrypto.a ${LibreSSL_INSTALL}
+      COMMAND ${CMAKE_COMMAND} -E copy ${libressl_SOURCE_DIR}/include/*.h ${LibreSSL_INCLUDE}
+      COMMAND ${CMAKE_COMMAND} -E copy_directory ${libressl_SOURCE_DIR}/include/openssl ${LibreSSL_INCLUDE}/openssl
+    endif()
   )
   message(STATUS "Adding libressl - done")
 endif()
