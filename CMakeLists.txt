@@ -37,35 +37,49 @@ else()
   # fetch libressl if needed
   message(STATUS "Not Found LIBSSL/LIBCRYPTO in ${LibreSSL_INSTALL}: adding libressl")
   include(FetchContent)
+  
+  set (LibreSSL_URL https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-3.1.4.tar.gz)
+  set (LibreSSL_HASH SHA256=414c149c9963983f805a081db5bd3aec146b5f82d529bb63875ac941b25dcbb6)
+
   FetchContent_Declare(
     LibreSSL
     QUIET OFF
-    URL https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-3.1.4.tar.gz
-    URL_HASH SHA256=414c149c9963983f805a081db5bd3aec146b5f82d529bb63875ac941b25dcbb6
+    URL ${LibreSSL_URL}
+    URL_HASH ${LibreSSL_HASH}
   )
   FetchContent_GetProperties(LibreSSL)
   if(NOT libressl_POPULATED)
     # real fetch
-    message(STATUS "Downloading libressl")
+    message(STATUS "Downloading libressl from ${LibreSSL_URL}")
     FetchContent_Populate(libressl)
     message(STATUS "Downloading libressl - done")
     add_subdirectory(${libressl_SOURCE_DIR} ${libressl_BINARY_DIR})
   endif()
   
+  if (WIN32) 
+    set (LIBSSL_SHARED_LIB ${libressl_BINARY_DIR}/ssl/${CMAKE_BUILD_TYPE}/*) 
+    set (CRYPTO_SHARED_LIB ${libressl_BINARY_DIR}/crypto/${CMAKE_BUILD_TYPE}/*) 
+  else()
+    set (LIBSSL_SHARED_LIB ${libressl_BINARY_DIR}/ssl/libssl.a)
+    set (CRYPTO_SHARED_LIB ${libressl_BINARY_DIR}/crypto/libcrypto.a)
+  endif()
+
   # use 'make install_libs' to install the static libraries to the SSL directory in the project root dir
   add_custom_command(
     TARGET install_libs POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory ${LibreSSL_INSTALL}
     COMMAND ${CMAKE_COMMAND} -E make_directory ${LibreSSL_INCLUDE}/openssl
-    
-    if (WIN32)
-      COMMAND ${CMAKE_COMMAND} -E copy ${libressl_BINARY_DIR}/ssl/${CMAKE_BUILD_TYPE}/* ${libressl_BINARY_DIR}/crypto/${CMAKE_BUILD_TYPE}/* ${LibreSSL_INSTALL}
-    else()
-      COMMAND ${CMAKE_COMMAND} -E copy ${libressl_BINARY_DIR}/ssl/libssl.a ${libressl_BINARY_DIR}/crypto/libcrypto.a ${LibreSSL_INSTALL}
+    COMMAND ${CMAKE_COMMAND} -E copy ${LIBSSL_SHARED_LIB} ${CRYPTO_SHARED_LIB} ${LibreSSL_INSTALL}
+  )
+  
+  if (NOT WIN32)
+    add_custom_command(
+      TARGET install_libs POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy ${libressl_SOURCE_DIR}/include/*.h ${LibreSSL_INCLUDE}
       COMMAND ${CMAKE_COMMAND} -E copy_directory ${libressl_SOURCE_DIR}/include/openssl ${LibreSSL_INCLUDE}/openssl
-    endif()
-  )
+    )
+  endif()
+
   message(STATUS "Adding libressl - done")
 endif()
 
