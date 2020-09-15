@@ -56,5 +56,5 @@ jobs:
       
     - uses: actions/upload-artifact@v2
       with:
-        name: SSL
+        name: SSL-${{matrix.os}}
         path: SSL/
