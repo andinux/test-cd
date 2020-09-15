@@ -13,19 +13,18 @@ else()
   set(PLATFORM_NAME linux)
 endif()
 
-
-set (LibreSSL_INSTALL ${PROJECT_SOURCE_DIR}/SSL/${PLATFORM_NAME}/) 
-set (LibreSSL_INCLUDE ${PROJECT_SOURCE_DIR}/SSL/include)
-
-find_library(LIBSSL NAMES ssl HINTS ${LibreSSL_INSTALL} NO_DEFAULT_PATH)
-find_library(LIBCRYPTO NAMES crypto HINTS ${LibreSSL_INSTALL} NO_DEFAULT_PATH)
-
 # add target install_libs
 add_custom_target(install_libs
   COMMAND ${CMAKE_COMMAND} -E echo install_libs
   COMMENT "install_libs"
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
+
+set (LibreSSL_INSTALL ${PROJECT_SOURCE_DIR}/SSL/${PLATFORM_NAME}/) 
+set (LibreSSL_INCLUDE ${PROJECT_SOURCE_DIR}/SSL/include)
+
+find_library(LIBSSL NAMES ssl HINTS ${LibreSSL_INSTALL} NO_DEFAULT_PATH)
+find_library(LIBCRYPTO NAMES crypto HINTS ${LibreSSL_INSTALL} NO_DEFAULT_PATH)
   
 if(LIBSSL AND LIBCRYPTO) 
   message(STATUS "Found LIBSSL: ${LIBSSL}")
@@ -36,7 +35,7 @@ if(LIBSSL AND LIBCRYPTO)
   
 else()
   # fetch libressl if needed
-  message(STATUS "Not Found LIBSSL/LIBCRYPTO: adding libressl")
+  message(STATUS "Not Found LIBSSL/LIBCRYPTO in ${LibreSSL_INSTALL}: adding libressl")
   include(FetchContent)
   FetchContent_Declare(
     LibreSSL
