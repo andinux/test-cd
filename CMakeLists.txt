@@ -13,27 +13,14 @@ else()
   set(PLATFORM_NAME linux)
 endif()
 
-# add target install_libs
-add_custom_target(install_libs
-  COMMAND ${CMAKE_COMMAND} -E echo install_libs
-  COMMENT "install_libs"
-  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-)
+set (LibreSSL_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/SSL/)
+set (LibreSSL_INSTALL ${LibreSSL_INSTALL_PREFIX}/${PLATFORM_NAME}/) 
+set (LibreSSL_INCLUDE ${LibreSSL_INSTALL_PREFIX}/include)
 
-set (LibreSSL_INSTALL ${PROJECT_SOURCE_DIR}/SSL/${PLATFORM_NAME}/) 
-set (LibreSSL_INCLUDE ${PROJECT_SOURCE_DIR}/SSL/include)
-
-find_library(LIBSSL NAMES ssl HINTS ${LibreSSL_INSTALL} NO_DEFAULT_PATH)
-find_library(LIBCRYPTO NAMES crypto HINTS ${LibreSSL_INSTALL} NO_DEFAULT_PATH)
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake;${CMAKE_MODULE_PATH}")
+find_package(LibreSSL)
   
-if(LIBSSL AND LIBCRYPTO) 
-  message(STATUS "Found LIBSSL: ${LIBSSL}")
-  message(STATUS "Found LIBCRYPTO: ${LIBCRYPTO}")
-  include_directories(${LibreSSL_INCLUDE})
-  message(STATUS "include: ${LibreSSL_INCLUDE}")
-  link_directories(${LibreSSL_INSTALL})
-  
-else()
+if(NOT LIBRESSL_FOUND)  
   # fetch libressl if needed
   message(STATUS "Not Found LIBSSL/LIBCRYPTO in ${LibreSSL_INSTALL}: adding libressl")
   include(FetchContent)
@@ -55,30 +42,8 @@ else()
     message(STATUS "Downloading libressl - done")
     add_subdirectory(${libressl_SOURCE_DIR} ${libressl_BINARY_DIR})
   endif()
-  
-  if (WIN32) 
-    set (LIBSSL_SHARED_LIB ${libressl_BINARY_DIR}/ssl/${CMAKE_BUILD_TYPE}/*) 
-    set (CRYPTO_SHARED_LIB ${libressl_BINARY_DIR}/crypto/${CMAKE_BUILD_TYPE}/*) 
-  else()
-    set (LIBSSL_SHARED_LIB ${libressl_BINARY_DIR}/ssl/libssl.a)
-    set (CRYPTO_SHARED_LIB ${libressl_BINARY_DIR}/crypto/libcrypto.a)
-  endif()
 
-  # use 'make install_libs' to install the static libraries to the SSL directory in the project root dir
-  add_custom_command(
-    TARGET install_libs POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${LibreSSL_INSTALL}
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${LibreSSL_INCLUDE}/openssl
-    COMMAND ${CMAKE_COMMAND} -E copy ${LIBSSL_SHARED_LIB} ${CRYPTO_SHARED_LIB} ${LibreSSL_INSTALL}
-  )
-  
-  if (NOT WIN32)
-    add_custom_command(
-      TARGET install_libs POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy ${libressl_SOURCE_DIR}/include/*.h ${LibreSSL_INCLUDE}
-      COMMAND ${CMAKE_COMMAND} -E copy_directory ${libressl_SOURCE_DIR}/include/openssl ${LibreSSL_INCLUDE}/openssl
-    )
-  endif()
+  find_package(LibreSSL REQUIRED)
 
   message(STATUS "Adding libressl - done")
 endif()
@@ -117,7 +82,7 @@ add_executable(${PROJECT_NAME} ${test_sources})
 # Link libraries
 ############################################################
 
-target_link_libraries(${PROJECT_NAME} PRIVATE ssl crypto)
+target_link_libraries(${PROJECT_NAME} PRIVATE LibreSSL::SSL LibreSSL::Crypto)
 
 # platform specific linked libraries
 if (WIN32)
