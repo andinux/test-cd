@@ -19,7 +19,9 @@ set (LibreSSL_INCLUDE ${LibreSSL_INSTALL_PREFIX}/include)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake;${CMAKE_MODULE_PATH}")
 find_package(LibreSSL)
-  
+
+message(STATUS "LIBRESSL_LIBRARIES: ${LIBRESSL_LIBRARIES}")
+
 if(NOT LIBRESSL_FOUND)  
   # fetch libressl if needed
   message(STATUS "Not Found LIBSSL/LIBCRYPTO in ${LibreSSL_INSTALL}: adding libressl")
