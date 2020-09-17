@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.4)
+cmake_policy(SET CMP0077 NEW) 
+
 project(test-cicd LANGUAGES C)
 
 ############################################################
@@ -13,18 +15,45 @@ else()
   set(PLATFORM_NAME linux)
 endif()
 
-set (LibreSSL_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/SSL/)
-set (LibreSSL_INSTALL ${LibreSSL_INSTALL_PREFIX}/${PLATFORM_NAME}/) 
-set (LibreSSL_INCLUDE ${LibreSSL_INSTALL_PREFIX}/include)
+set (LIBRESSL_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/SSL)
+set (LIBRESSL_INSTALL ${LIBRESSL_INSTALL_PREFIX}/${PLATFORM_NAME}/) 
 
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake;${CMAKE_MODULE_PATH}")
-find_package(LibreSSL)
+# Find Include Path
+find_path(LIBRESSL_INCLUDE_DIR NAMES tls.h HINTS ${LIBRESSL_INSTALL_PREFIX} NO_DEFAULT_PATH PATH_SUFFIXES include
+)
 
-message(STATUS "LIBRESSL_LIBRARIES: ${LIBRESSL_LIBRARIES}")
+# Find SSL Library
+find_library(LIBRESSL_SSL NAMES ssl HINTS ${LIBRESSL_INSTALL} NO_DEFAULT_PATH)
 
-if(NOT LIBRESSL_FOUND)  
+# Find Crypto Library
+find_library(LIBRESSL_CRYPTO NAMES crypto HINTS ${LIBRESSL_INSTALL} NO_DEFAULT_PATH)
+  
+# Find Version File
+if(LIBRESSL_INCLUDE_DIR AND EXISTS "${LIBRESSL_INCLUDE_DIR}/openssl/opensslv.h")
+
+    # Get Version From File
+    file(STRINGS "${LIBRESSL_INCLUDE_DIR}/openssl/opensslv.h" OPENSSLV.H REGEX "#define LIBRESSL_VERSION_TEXT[ ]+\".*\"")
+
+    # Match Version String
+    string(REGEX REPLACE ".*\".*([0-9]+)\\.([0-9]+)\\.([0-9]+)\"" "\\1;\\2;\\3" LIBRESSL_VERSION_LIST "${OPENSSLV.H}")
+
+    # Split Parts
+    list(GET LIBRESSL_VERSION_LIST 0 LIBRESSL_VERSION_MAJOR)
+    list(GET LIBRESSL_VERSION_LIST 1 LIBRESSL_VERSION_MINOR)
+    list(GET LIBRESSL_VERSION_LIST 2 LIBRESSL_VERSION_REVISION)
+
+    # Set Version String
+    set(LIBRESSL_VERSION "${LIBRESSL_VERSION_MAJOR}.${LIBRESSL_VERSION_MINOR}.${LIBRESSL_VERSION_REVISION}")
+endif()  
+  
+if(LIBRESSL_SSL AND LIBRESSL_CRYPTO AND LIBRESSL_INCLUDE_DIR) 
+  message(STATUS "Found LibreSSL ${LIBRESSL_VERSION}, SSL: ${LIBRESSL_SSL}, CRYPTO: ${LIBRESSL_CRYPTO}")
+  include_directories(${LIBRESSL_INCLUDE_DIR})
+  message(STATUS "include: ${LIBRESSL_INCLUDE_DIR}")
+  
+else()  
   # fetch libressl if needed
-  message(STATUS "Not Found LIBSSL/LIBCRYPTO in ${LibreSSL_INSTALL}: adding libressl")
+  message(STATUS "Not Found LibreSSL in ${LIBRESSL_INSTALL}: adding libressl")
   include(FetchContent)
   
   set (LibreSSL_URL https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-3.1.4.tar.gz)
@@ -42,10 +71,40 @@ if(NOT LIBRESSL_FOUND)
     message(STATUS "Downloading libressl from ${LibreSSL_URL}")
     FetchContent_Populate(libressl)
     message(STATUS "Downloading libressl - done")
+    
+    # set preferences for the LibreSSL CMake
+    set (LIBRESSL_TESTS NO)
+    set (LIBRESSL_APPS NO)
+    set (LIBRESSL_SKIP_INSTALL YES)
+    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+    
+    # add LibreSSL directories
     add_subdirectory(${libressl_SOURCE_DIR} ${libressl_BINARY_DIR})
   endif()
-
-  find_package(LibreSSL REQUIRED)
+  
+  set (LIBRESSL_SSL ssl)
+  set (LIBRESSL_CRYPTO crypto)
+  
+  install(
+	TARGETS ssl crypto
+	ARCHIVE DESTINATION ${LIBRESSL_INSTALL}
+  )
+	
+  install(DIRECTORY ${libressl_SOURCE_DIR}/include
+	DESTINATION ${LIBRESSL_INSTALL_PREFIX}
+	PATTERN "CMakeLists.txt" EXCLUDE
+	PATTERN "compat" EXCLUDE
+	PATTERN "pqueue.h" EXCLUDE
+	PATTERN "Makefile*" EXCLUDE
+  )	
+  
+  if (WIN32) 
+    set (LIBSSL_SHARED_LIB ${libressl_BINARY_DIR}/ssl/${CMAKE_BUILD_TYPE}/ssl-48.lib) 
+    set (CRYPTO_SHARED_LIB ${libressl_BINARY_DIR}/crypto/${CMAKE_BUILD_TYPE}/crypto-46.lib) 
+  else()
+    set (LIBSSL_SHARED_LIB ${libressl_BINARY_DIR}/ssl/libssl.a)
+    set (CRYPTO_SHARED_LIB ${libressl_BINARY_DIR}/crypto/libcrypto.a)
+  endif()
 
   message(STATUS "Adding libressl - done")
 endif()
@@ -84,7 +143,7 @@ add_executable(${PROJECT_NAME} ${test_sources})
 # Link libraries
 ############################################################
 
-target_link_libraries(${PROJECT_NAME} PRIVATE LibreSSL::SSL LibreSSL::Crypto)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBRESSL_SSL} ${LIBRESSL_CRYPTO})
 
 # platform specific linked libraries
 if (WIN32)
