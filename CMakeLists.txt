@@ -51,6 +51,9 @@ if(LIBRESSL_SSL AND LIBRESSL_CRYPTO AND LIBRESSL_INCLUDE_DIR)
   include_directories(${LIBRESSL_INCLUDE_DIR})
   message(STATUS "include: ${LIBRESSL_INCLUDE_DIR}")
   
+  # Create an install target, otherwise the make install command will fail
+  install(CODE "MESSAGE(\"Nothing to install.\")")
+  
 else()  
   # fetch libressl if needed
   message(STATUS "Not Found LibreSSL in ${LIBRESSL_INSTALL}: adding libressl")
