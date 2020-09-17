@@ -79,6 +79,8 @@ else()
     set (LIBRESSL_TESTS NO)
     set (LIBRESSL_APPS NO)
     set (LIBRESSL_SKIP_INSTALL YES)
+    # fix the installation of pkgconfig, that is executed even with LIBRESSL_SKIP_INSTALL
+    set (CMAKE_INSTALL_PREFIX SSL)
     set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
     
     # add LibreSSL directories
