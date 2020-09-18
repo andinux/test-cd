@@ -52,7 +52,6 @@ jobs:
 
     - name: Install Libs
       id: install-libs
-      if: ${{ env.NEEDS_TO_INSTALL == true }}
       continue-on-error: true
       working-directory: ${{runner.workspace}}/build
       shell: bash
@@ -67,7 +66,7 @@ jobs:
       run: ctest -C $BUILD_TYPE
       
     - name: Upload artifacts
-      if: ${{ steps.install-libs.outcome == "success" }}
+      if: ${{ steps.install-libs.outcome == 'success' }}
       uses: actions/upload-artifact@v2
       with:
         name: SSL
