@@ -52,7 +52,6 @@ jobs:
 
     - name: Install Libs
       id: install-libs
-      if: ${{ env.NEEDS_TO_INSTALL == true }}
       continue-on-error: true
       working-directory: ${{runner.workspace}}/build
       shell: bash
