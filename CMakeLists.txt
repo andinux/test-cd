@@ -15,12 +15,14 @@ else()
   set(PLATFORM_NAME linux)
 endif()
 
-set (LIBRESSL_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/SSL)
-set (LIBRESSL_INSTALL ${LIBRESSL_INSTALL_PREFIX}/${PLATFORM_NAME}/) 
+
+##### LibreSSL ######
+
+set(LIBRESSL_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/SSL)
+set(LIBRESSL_INSTALL ${LIBRESSL_INSTALL_PREFIX}/${PLATFORM_NAME}/) 
 
 # Find Include Path
-find_path(LIBRESSL_INCLUDE_DIR NAMES tls.h HINTS ${LIBRESSL_INSTALL_PREFIX} NO_DEFAULT_PATH PATH_SUFFIXES include
-)
+find_path(LIBRESSL_INCLUDE_DIR NAMES tls.h HINTS ${LIBRESSL_INSTALL_PREFIX} NO_DEFAULT_PATH PATH_SUFFIXES include)
 
 # Find SSL Library
 find_library(LIBRESSL_SSL NAMES ssl libssl ssl-48 NAMES_PER_DIR HINTS ${LIBRESSL_INSTALL} NO_DEFAULT_PATH)
@@ -73,19 +75,19 @@ else()
     message(STATUS "Downloading libressl - done")
     
     # set preferences for the LibreSSL CMake
-    set (LIBRESSL_TESTS NO)
-    set (LIBRESSL_APPS NO)
-    set (LIBRESSL_SKIP_INSTALL YES)
-    # fix the installation of pkgconfig, that is executed even with LIBRESSL_SKIP_INSTALL
-    set (CMAKE_INSTALL_PREFIX SSL)
     set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+    set(LIBRESSL_TESTS NO)
+    set(LIBRESSL_APPS NO)
+    set(LIBRESSL_SKIP_INSTALL YES)
+    # fix the installation of pkgconfig, that is executed even with LIBRESSL_SKIP_INSTALL
+    set(CMAKE_INSTALL_PREFIX SSL)
     
     # add LibreSSL directories
     add_subdirectory(${libressl_SOURCE_DIR} ${libressl_BINARY_DIR})
   endif()
   
-  set (LIBRESSL_SSL ssl)
-  set (LIBRESSL_CRYPTO crypto)
+  set(LIBRESSL_SSL ssl)
+  set(LIBRESSL_CRYPTO crypto)
   
   install(
 	TARGETS ssl crypto
@@ -102,6 +104,58 @@ else()
   
   message(STATUS "Adding libressl - done")
 endif()
+
+
+##### libuv ######
+
+set (LIBUV_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/libuv)
+set (LIBUV_INSTALL ${LIBUV_INSTALL_PREFIX}/${PLATFORM_NAME}/) 
+
+# Try to find the header
+FIND_PATH(LIBUV_INCLUDE_DIR NAMES uv.h HINTS ${LIBUV_INSTALL_PREFIX} NO_DEFAULT_PATH PATH_SUFFIXES include)
+
+# Try to find the library
+FIND_LIBRARY(LIBUV_LIBRARY NAMES uv_a libuv_a NAMES_PER_DIR HINTS ${LIBUV_INSTALL} NO_DEFAULT_PATH)
+
+if(LIBUV_INCLUDE_DIR AND LIBUV_LIBRARY) 
+  message(STATUS "Found libuv: ${LIBUV_LIBRARY}")
+  include_directories(${LIBUV_INCLUDE_DIR})
+  message(STATUS "Include libuv: ${LIBUV_INCLUDE_DIR}")
+      
+else() 
+ # fetch libuv if needed
+  message(STATUS "Not Found libuv in ${LIBUV_INSTALL}: adding libuv")
+  include(FetchContent)
+  
+  set (LIBUV_URL "https://github.com/libuv/libuv/archive/v1.39.0.tar.gz")
+
+  FetchContent_Declare(
+    libuv
+    QUIET OFF
+    URL ${LIBUV_URL}
+  )
+  FetchContent_GetProperties(libuv)
+  if(NOT libuv_POPULATED)
+    # real fetch
+    message(STATUS "Downloading libuv from ${LIBUV_URL}")
+    FetchContent_Populate(libuv)
+    message(STATUS "Downloading libuv - done")
+    
+    # set preferences for the libuv CMake
+    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+    set(BUILD_TESTING NO)
+    set(CMAKE_INSTALL_PREFIX ${LIBUV_INSTALL_PREFIX}) 
+    set(CMAKE_INSTALL_LIBDIR ${PLATFORM_NAME})
+
+    # add libuv directories
+    add_subdirectory(${libuv_SOURCE_DIR} ${libuv_BINARY_DIR})
+  endif()
+  
+  set (LIBUV_LIBRARY uv_a)
+  
+  message(STATUS "Adding libuv - done")
+endif()
+
 
 ############################################################
 # Platform specific definitions
@@ -137,7 +191,7 @@ add_executable(${PROJECT_NAME} ${test_sources})
 # Link libraries
 ############################################################
 
-target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBRESSL_SSL} ${LIBRESSL_CRYPTO})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBRESSL_SSL} ${LIBRESSL_CRYPTO} ${LIBUV_LIBRARY})
 
 # platform specific linked libraries
 if (WIN32)
