@@ -23,10 +23,10 @@ find_path(LIBRESSL_INCLUDE_DIR NAMES tls.h HINTS ${LIBRESSL_INSTALL_PREFIX} NO_D
 )
 
 # Find SSL Library
-find_library(LIBRESSL_SSL NAMES ssl HINTS ${LIBRESSL_INSTALL} NO_DEFAULT_PATH)
+find_library(LIBRESSL_SSL NAMES ssl libssl ssl-48 NAMES_PER_DIR HINTS ${LIBRESSL_INSTALL} NO_DEFAULT_PATH)
 
 # Find Crypto Library
-find_library(LIBRESSL_CRYPTO NAMES crypto HINTS ${LIBRESSL_INSTALL} NO_DEFAULT_PATH)
+find_library(LIBRESSL_CRYPTO NAMES crypto libcrypto crypto-46 NAMES_PER_DIR HINTS ${LIBRESSL_INSTALL} NO_DEFAULT_PATH)
   
 # Find Version File
 if(LIBRESSL_INCLUDE_DIR AND EXISTS "${LIBRESSL_INCLUDE_DIR}/openssl/opensslv.h")
@@ -45,7 +45,7 @@ if(LIBRESSL_INCLUDE_DIR AND EXISTS "${LIBRESSL_INCLUDE_DIR}/openssl/opensslv.h")
     # Set Version String
     set(LIBRESSL_VERSION "${LIBRESSL_VERSION_MAJOR}.${LIBRESSL_VERSION_MINOR}.${LIBRESSL_VERSION_REVISION}")
 endif()  
-  
+    
 if(LIBRESSL_SSL AND LIBRESSL_CRYPTO AND LIBRESSL_INCLUDE_DIR) 
   message(STATUS "Found LibreSSL ${LIBRESSL_VERSION}, SSL: ${LIBRESSL_SSL}, CRYPTO: ${LIBRESSL_CRYPTO}")
   include_directories(${LIBRESSL_INCLUDE_DIR})
@@ -112,6 +112,8 @@ else()
   endif()
 
   message(STATUS "Adding libressl - done")
+  
+  set(ENV{NEEDS_TO_INSTALL} true)
 endif()
 
 ############################################################
