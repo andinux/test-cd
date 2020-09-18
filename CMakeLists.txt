@@ -50,10 +50,7 @@ if(LIBRESSL_SSL AND LIBRESSL_CRYPTO AND LIBRESSL_INCLUDE_DIR)
   message(STATUS "Found LibreSSL ${LIBRESSL_VERSION}, SSL: ${LIBRESSL_SSL}, CRYPTO: ${LIBRESSL_CRYPTO}")
   include_directories(${LIBRESSL_INCLUDE_DIR})
   message(STATUS "include: ${LIBRESSL_INCLUDE_DIR}")
-  
-  # Create an install target, otherwise the make install command will fail
-  install(CODE "MESSAGE(\"Nothing to install.\")")
-  
+      
 else()  
   # fetch libressl if needed
   message(STATUS "Not Found LibreSSL in ${LIBRESSL_INSTALL}: adding libressl")
@@ -103,17 +100,7 @@ else()
 	PATTERN "Makefile*" EXCLUDE
   )	
   
-  if (WIN32) 
-    set (LIBSSL_SHARED_LIB ${libressl_BINARY_DIR}/ssl/${CMAKE_BUILD_TYPE}/ssl-48.lib) 
-    set (CRYPTO_SHARED_LIB ${libressl_BINARY_DIR}/crypto/${CMAKE_BUILD_TYPE}/crypto-46.lib) 
-  else()
-    set (LIBSSL_SHARED_LIB ${libressl_BINARY_DIR}/ssl/libssl.a)
-    set (CRYPTO_SHARED_LIB ${libressl_BINARY_DIR}/crypto/libcrypto.a)
-  endif()
-
   message(STATUS "Adding libressl - done")
-  
-  set(ENV{NEEDS_TO_INSTALL} true)
 endif()
 
 ############################################################
