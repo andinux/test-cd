@@ -51,7 +51,9 @@ jobs:
       run: cmake --build . --config $BUILD_TYPE
 
     - name: Install Libs
+      id: install-libs
       if: ${{ env.NEEDS_TO_INSTALL == true }}
+      continue-on-error: true
       working-directory: ${{runner.workspace}}/build
       shell: bash
       # Execute the build.  You can specify a specific target with "--target <NAME>"
@@ -65,7 +67,7 @@ jobs:
       run: ctest -C $BUILD_TYPE
       
     - name: Upload artifacts
-      if: ${{ env.NEEDS_TO_INSTALL == true }}
+      if: ${{ steps.install-libs.outcome == "success" }}
       uses: actions/upload-artifact@v2
       with:
         name: SSL
