@@ -67,7 +67,7 @@ jobs:
       run: ctest -C $BUILD_TYPE
       
     - name: Upload artifacts
-      if: ${{ steps.install-libs.outcome == "success" }}
+      if: ${{ steps.install-libs.outcome == 'success' }}
       uses: actions/upload-artifact@v2
       with:
         name: SSL
